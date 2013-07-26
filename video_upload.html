@@ -36,9 +36,9 @@
                 document.getElementById('upload-area').innerHTML = content;
 
                 fReader.onload = function (evnt) {
-                    socket.emit("start", {"name": name, "data": evnt.target.result });
+                    socket.emit("Start", {"name": name, "data": evnt.target.result });
                 };
-                socket.emit("start", {"name": name, "size" : selectedFile.size});
+                socket.emit("Start", {"name": name, "size" : selectedFile.size});
             } else {
                 alert("Please Select A File");
             }
