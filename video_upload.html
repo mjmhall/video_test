@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>Video Uploader</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <script type="text/javascript" charset="utf-8">
+            window.addEventListener("load", ready);
+
+            function ready(){
+                if(window.File && window.FileReader) {
+                    document.getElementById("upload-button").addEventListener("click", startUpload);
+                    document.getElementById("file-box").addEventListener("change", fileChosen);
+                } else {
+                    document.getElementById("upload-area").innerHTML = "Your Browser doesn't support the File API, please update your browser"
+                }
+            }
+        var selectedFile;
+        function fileChosen(evnt) {
+            selectedFile = evnt.target.files[0];
+            document.getElementById("name-box").value = selectedFile.name;
+        }
+
+        var socket = io.connect("http://ec2-54-228-119-222.eu-west-1.compute.amazonaws.com:8080");
+        var fReader;
+        var name;
+        var content;
+
+        function startUpload() {
+            if(document.getElementById("name-box").value != "") {
+                fReader = new FileReader;
+                name = document.getElementById("name-box").value;
+                content = '<span id="name-area">Uploading ' + selectedFile.name + " as " + name + "</span>";
+                content += '<div id="progress-container"><div id="progress-bar"></div></div><span id="percent">50%</span>';
+                content += '<span id="uploaded"> - <span id="MB">0</span>/' + Math.round(selectedFile.size / 1048576) + 'MB</span>';
+                document.getElementById('upload-area').innerHTML = content;
+
+                fReader.onload = function (evnt) {
+                    socket.emit("start", {"name": name, "data": evnt.target.result });
+                };
+                socket.emit("start", {"name": name, "size" : selectedFile.size});
+            } else {
+                alert("Please Select A File");
+            }
+        }
+
+        function updateBar(percent) {
+            var MBDone = Math.round((percent / 100.0)  * selectedFile.size ) / 1048576;
+            document.getElementById("progress-bar").style.width = percent + "%";
+            document.getElementById("percent").innerHTML = (Math.round(percent*100)/100) + "%";
+            document.getElementById("MB").innerHTML  = MBDone;
+        }
+
+        function refresh() {
+            location.reload(true);
+        }
+
+        socket.on("MoreData", function(data) {
+
+            var place = (data["Place"]);
+            var newFile; // Variable used to hold the new block of data
+
+            updateBar(data['Percent']);
+
+            if (selectedFile.webkitSlice) {
+                newFile = selectedFile.webkitSlice(place, place + Math.min(524288, (selectedFile.size - place)));
+            } else {
+                newFile = selectedFile.mozSlice(place, place + Math.min(524288, (selectedFile.size - place)));
+            }
+            fReader.readAsBinaryString(newFile);
+        });
+
+        var path = "http://ec2-54-228-119-222.eu-west-1.compute.amazonaws.com:8080/";
+
+        socket.on("Done", function(data){
+            var content = "Video Successfully Uploaded !!";
+            content += '<img id="thumb" src="' + path + data["Image"] + '" alt="' + name + '"><br>';
+            content += '<buttontype="button" name="upload" value="" id="restart" class="button">Upload Another</button>';
+            document.getElementById("upload-area").innerHTML = content;
+            document.getElementById("restart").addEventListener("click", refresh);
+            document.getElementById('upload-box').style.width = '270px';
+            document.getElementById('upload-box').style.height = '270px';
+            document.getElementById('upload-box').style.textAlign = 'center';
+            document.getElementById('restart').style.left = '20px';
+        });
+
+        </script>
+        <style type="text/css" media="screen">
+
+            body {
+                background: #F9F9F9;
+                font-family: Calibri;
+                font-size: 18px;
+            }
+
+            h2 {
+                font-size: 40px;
+                margin-top: 6px;
+                margin-bottom: 10px;
+            }
+
+            #thumb {
+                max-width: 230px;
+                max-height: 130px;
+            }
+
+            #progress-container {
+                width: 396px;
+                height: 36px;
+                background: #F8F8F8;
+                margin-top: 14px;
+                border: 1px solid #E8E8E8;
+                border-top: 1px solid #D8D8D8;
+
+                -webkit-border-radius: 4px;
+                -moz-border-radius: 4px;
+                border-radius: 4px;
+                padding: 2px;
+            }
+
+            #progress-bar {
+                height: 100%;
+                width: 0%;
+
+                -webkit-border-radius: 4px;
+                -moz-border-radius: 4px;
+                border-radius: 4px;
+                background: -webkit-gradient( linear, left top, left bottom, from(#a50aad), color-stop(0.50, #6b0d6b), to(#4a074a));
+            }
+
+            #upload-box {
+                background: #FFF;
+                padding: 20px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -200px;
+                margin-top: -150px;
+                height: 200px;
+                width: 400px;
+                border: 1px solid #DFDFDF;
+
+                -webkit-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+                -moz-box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+                box-shadow: 0px 0px 16px 0px rgba(0,0,0,0.2);
+
+                -webkit-border-radius: 11px;
+                -moz-border-radius: 11px;
+                border-radius: 11px;
+            }
+
+            button.Button {
+                font-size: 18px;
+                color: #ffffff;
+                padding: 8px 30px;
+                background: -webkit-gradient( linear, left top, left bottom, from(#a50aad), color-stop(0.50, #6b0d6b), to(#4a074a));
+
+                -webkit-border-radius: 5px;
+                -moz-border-radius: 5px;
+                border-radius: 5px;
+                border: 1px solid #5b139e;
+
+                -webkit-box-shadow: 0px 1px 3px rgba(000,000,000,0.5), inset 0px 0px 3px rgba(255,255,255,0.4);
+                -moz-box-shadow: 0px 1px 3px rgba(000,000,000,0.5), inset 0px 0px 3px rgba(255,255,255,0.4);
+                box-shadow: 0px 1px 3px rgba(000,000,000,0.5), inset 0px 0px 3px rgba(255,255,255,0.4);
+                text-shadow: 0px -1px 0px rgba(000,000,000,0.1), 0px 1px 0px rgba(145,035,145,1);
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                cursor: pointer;
+            }
+
+            button.Button:hover {
+                background: -webkit-gradient( linear, left top, left bottom, from(#a50aad), color-stop(0.80, #6b0d6b), to(#a50aad));
+                color: #D3D3D3;
+            }
+
+            button.Button:active {
+                background: -webkit-gradient( linear, left top, left bottom, from(#4a074a), color-stop(0.80, #6b0d6b), to(#a50aad));
+            }
+
+            input {
+                margin-top: 10px;
+                margin-bottom: 8px;
+            }
+
+            input[type=text] {
+                border: 1px solid #CDCDCD;
+                border-top: 1px solid #676767;
+
+                -webkit-border-radius: 3px;
+                -moz-border-radius: 3px;
+                border-radius: 3px;
+                font-size: 18px;
+                padding: 2px;
+                width: 300px;
+                margin-left: 10px;
+            }
+
+        </style>
+    </head>
+
+    <body>
+        <div id="upload-box">
+            <h2>Video Uploader</h2>
+          <span id="upload-area">
+            <label for="file-box">Choose A File: </label><input type="file" id="file-box"><br>
+            <label for="name-box">Name: </label><input type="text" id="name-box"><br>
+
+            <button type="button" id="upload-button" class="button">Upload</button>
+          </span>
+        </div>
+    </body>
+
+</html>
