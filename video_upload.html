@@ -15,7 +15,7 @@
                     document.getElementById("upload-area").innerHTML = "Your Browser doesn't support the File API, please update your browser"
                 }
             }
-        var selectedFile;
+            var selectedFile;
         function fileChosen(evnt) {
             selectedFile = evnt.target.files[0];
             document.getElementById("name-box").value = selectedFile.name;
@@ -36,9 +36,9 @@
                 document.getElementById('upload-area').innerHTML = content;
 
                 fReader.onload = function (evnt) {
-                    socket.emit("start", {"name": name, "data": evnt.target.result });
+                    socket.emit("Start", {"name": name, "data": evnt.target.result });
                 };
-                socket.emit("start", {"name": name, "size" : selectedFile.size});
+                socket.emit("Start", {"name": name, "size" : selectedFile.size});
             } else {
                 alert("Please Select A File");
             }
@@ -62,8 +62,8 @@
 
             updateBar(data['Percent']);
 
-            if (selectedFile.webkitSlice) {
-                newFile = selectedFile.webkitSlice(place, place + Math.min(524288, (selectedFile.size - place)));
+            if (selectedFile.slice) {
+                newFile = selectedFile.slice(place, place + Math.min(524288, (selectedFile.size - place)));
             } else {
                 newFile = selectedFile.mozSlice(place, place + Math.min(524288, (selectedFile.size - place)));
             }

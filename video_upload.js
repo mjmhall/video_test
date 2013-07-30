@@ -19,6 +19,8 @@ function handler (req, res) {
         });
 }
 
+io.set('transports',['xhr-polling']);
+
 io.sockets.on('connection', function (socket) {
     socket.on('Start', function (data) { //data contains the variables that we passed through in the html file
         var Name = data['Name'];
@@ -29,7 +31,7 @@ io.sockets.on('connection', function (socket) {
         }
         var Place = 0;
         try{
-            var Stat = fs.statSync('Temp/' +  Name);
+            var Stat = fs.statSync('temp/' +  Name);
             if(Stat.isFile())
             {
                 Files[Name]['Downloaded'] = Stat.size;
@@ -37,7 +39,7 @@ io.sockets.on('connection', function (socket) {
             }
         }
         catch(er){} //It's a New File
-        fs.open("Temp/" + Name, 'a', 0755, function(err, fd){
+        fs.open("temp/" + Name, 'a', 0755, function(err, fd){
             if(err)
             {
                 console.log(err);
@@ -57,10 +59,10 @@ io.sockets.on('connection', function (socket) {
         if(Files[Name]['Downloaded'] == Files[Name]['FileSize']) //If File is Fully Uploaded
         {
             fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
-                var inp = fs.createReadStream("Temp/" + Name);
+                var inp = fs.createReadStream("temp/" + Name);
                 var out = fs.createWriteStream("Video/" + Name);
                 util.pump(inp, out, function(){
-                    fs.unlink("Temp/" + Name, function () { //This Deletes The Temporary File
+                    fs.unlink("temp/" + Name, function () { //This Deletes The temporary File
                         exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
                             socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
                         });
